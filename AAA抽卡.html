@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>事件牌管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #ffffff;
+            color: #000000;
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            padding: 20px 30px 40px 30px;
+            line-height: 1.6;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+        }
+        h2 {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 18px 0 12px 0;
+            border-bottom: 1px solid #000;
+            padding-bottom: 4px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+        }
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        /* 抽取 & 搜索区域 */
+        .draw-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        .draw-btn {
+            background: #ffffff;
+            border: 1.5px solid #000000;
+            color: #000000;
+            padding: 8px 20px;
+            font-size: 15px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 0;
+            transition: background 0.15s;
+        }
+        .draw-btn:hover {
+            background: #eeeeee;
+        }
+        .draw-btn:active {
+            background: #cccccc;
+        }
+        .draw-target-select {
+            background: #ffffff;
+            border: 1.5px solid #000000;
+            color: #000;
+            padding: 6px 10px;
+            font-size: 15px;
+            font-family: inherit;
+            border-radius: 0;
+        }
+        .draw-result {
+            margin-top: 12px;
+            padding: 14px 18px;
+            border: 1.5px solid #000000;
+            min-height: 60px;
+            background: #fafafa;
+        }
+        .draw-result .card-type-label {
+            display: inline-block;
+            font-weight: bold;
+            font-size: 14px;
+            border: 1px solid #000;
+            padding: 2px 10px;
+            margin-right: 12px;
+        }
+        .draw-result .card-name {
+            font-size: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin-right: 12px;
+        }
+        .draw-result .card-content {
+            font-size: 15px;
+            margin-top: 6px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .draw-result .empty-hint {
+            color: #666;
+            font-size: 15px;
+        }
+        .draw-result .target-hint {
+            font-size: 14px;
+            margin-top: 4px;
+            color: #222;
+            border-top: 1px dashed #aaa;
+            padding-top: 6px;
+        }
+
+        /* 搜索区域 */
+        .search-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+            margin-top: 10px;
+            margin-bottom: 14px;
+            align-items: center;
+        }
+        .search-input {
+            background: #ffffff;
+            border: 1.5px solid #000000;
+            color: #000;
+            padding: 6px 12px;
+            font-size: 15px;
+            font-family: inherit;
+            border-radius: 0;
+            width: 280px;
+            max-width: 100%;
+        }
+        .search-btn {
+            background: #ffffff;
+            border: 1.5px solid #000000;
+            color: #000000;
+            padding: 6px 20px;
+            font-size: 15px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 0;
+        }
+        .search-btn:hover {
+            background: #eeeeee;
+        }
+        .search-results {
+            border: 1.5px solid #000;
+            padding: 10px 14px;
+            background: #fafafa;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 8px;
+        }
+        .search-results .no-result {
+            color: #666;
+            font-size: 14px;
+        }
+        .search-result-item {
+            border-bottom: 1px solid #ccc;
+            padding: 8px 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 8px 14px;
+        }
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        .search-result-item .sr-info {
+            flex: 1 1 200px;
+        }
+        .search-result-item .sr-type {
+            font-weight: bold;
+            font-size: 13px;
+            border: 1px solid #000;
+            padding: 0 6px;
+            display: inline-block;
+        }
+        .search-result-item .sr-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .search-result-item .sr-content-preview {
+            font-size: 13px;
+            color: #222;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 400px;
+        }
+        .search-result-item .sr-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 10px;
+        }
+        .search-result-item .sr-actions select {
+            background: #ffffff;
+            border: 1px solid #000;
+            color: #000;
+            padding: 2px 4px;
+            font-family: inherit;
+            font-size: 13px;
+            border-radius: 0;
+        }
+        .search-result-item .sr-actions button {
+            background: #ffffff;
+            border: 1px solid #000;
+            color: #000;
+            padding: 2px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 0;
+        }
+        .search-result-item .sr-actions button:hover {
+            background: #eeeeee;
+        }
+        .search-result-item .sr-actions .add-btn {
+            border-color: #0066aa;
+            color: #0066aa;
+        }
+        .search-result-item .sr-actions .add-btn:hover {
+            background: #eeefff;
+        }
+
+        /* 阵营网格 */
+        .factions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px 30px;
+            margin-top: 6px;
+        }
+        .faction-box {
+            border: 1.5px solid #000000;
+            padding: 12px 16px 16px 16px;
+            background: #fcfcfc;
+            min-height: 120px;
+        }
+        .faction-title {
+            font-size: 18px;
+            font-weight: bold;
+            border-bottom: 1px solid #000;
+            padding-bottom: 4px;
+            margin-bottom: 10px;
+        }
+        .faction-empty {
+            color: #666;
+            font-size: 14px;
+            padding: 6px 0;
+        }
+
+        /* 阵营内单张牌 */
+        .faction-card {
+            border: 1px solid #000;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            background: #ffffff;
+        }
+        .faction-card .fc-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 6px 14px;
+            margin-bottom: 4px;
+        }
+        .faction-card .fc-type {
+            font-size: 13px;
+            font-weight: bold;
+            border: 1px solid #000;
+            padding: 0 8px;
+        }
+        .faction-card .fc-name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .faction-card .fc-content {
+            font-size: 14px;
+            margin-top: 4px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .faction-card .fc-actions {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 12px;
+            align-items: center;
+            border-top: 1px dashed #ccc;
+            padding-top: 8px;
+        }
+        .faction-card .fc-actions select {
+            background: #ffffff;
+            border: 1px solid #000;
+            color: #000;
+            padding: 2px 4px;
+            font-family: inherit;
+            font-size: 13px;
+            border-radius: 0;
+        }
+        .faction-card .fc-actions button {
+            background: #ffffff;
+            border: 1px solid #000;
+            color: #000;
+            padding: 2px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 0;
+        }
+        .faction-card .fc-actions button:hover {
+            background: #eeeeee;
+        }
+        .faction-card .fc-actions button:active {
+            background: #cccccc;
+        }
+        .faction-card .fc-actions .del-btn {
+            border-color: #aa0000;
+            color: #aa0000;
+        }
+        .faction-card .fc-actions .del-btn:hover {
+            background: #ffeeee;
+        }
+        .faction-card .fc-actions .move-btn {
+            border-color: #0066aa;
+            color: #0066aa;
+        }
+        .faction-card .fc-actions .move-btn:hover {
+            background: #eeefff;
+        }
+        .faction-card .fc-actions .move-target {
+            min-width: 80px;
+        }
+
+        /* 本地存储提示条 */
+        .storage-bar {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 14px;
+            padding: 6px 12px;
+            border: 1px solid #000;
+            background: #f4f4f4;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+        }
+        .storage-bar button {
+            background: #ffffff;
+            border: 1px solid #000;
+            color: #000;
+            padding: 2px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 0;
+        }
+        .storage-bar button:hover {
+            background: #eeeeee;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>事件牌管理</h1>
+
+    <div class="storage-bar" id="storageBar">
+        <span id="storageStatus">本地数据已自动保存</span>
+        <button id="clearStorageBtn" type="button">清空本地数据</button>
+    </div>
+
+    <!-- ========== 第一部分：抽取卡牌 ========== -->
+    <div class="section">
+        <h2>抽取卡牌</h2>
+        <div class="draw-area">
+            <button class="draw-btn" data-type="战斗">抽取战斗牌</button>
+            <button class="draw-btn" data-type="策略">抽取策略牌</button>
+            <button class="draw-btn" data-type="神秘">抽取神秘牌</button>
+            <button class="draw-btn" data-type="随机">抽取随机牌</button>
+            <span style="font-size:15px; margin-left:4px;">放入阵营</span>
+            <select class="draw-target-select" id="drawTargetFaction">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3" selected>3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+        </div>
+        <div class="draw-result" id="drawResult">
+            <span class="empty-hint">点击上方按钮抽取卡牌，将放入您选择的阵营</span>
+        </div>
+    </div>
+
+    <!-- ========== 搜索区域 ========== -->
+    <div class="section">
+        <h2>搜索卡牌并加入阵营</h2>
+        <div class="search-area">
+            <input class="search-input" id="searchInput" type="text" placeholder="输入牌名或内容关键词">
+            <button class="search-btn" id="searchBtn">搜索</button>
+            <span style="font-size:14px; color:#444;">（支持牌名/内容，不区分大小写）</span>
+        </div>
+        <div class="search-results" id="searchResults">
+            <span class="no-result">输入关键词并点击搜索，匹配结果将显示在这里</span>
+        </div>
+    </div>
+
+    <!-- ========== 第二部分：五个阵营 ========== -->
+    <div class="section">
+        <h2>阵营牌库 · 所有卡牌均可独立转移</h2>
+        <div class="factions-grid" id="factionsContainer">
+            <!-- 由 JS 动态渲染 -->
+        </div>
+    </div>
+
+    <script>
+        // ======================================================================
+        // 1. 数据：所有卡牌（事件牌 2.0）
+        // ======================================================================
+        const CARD_DATA = {
+            '战斗': {
+                '1': { name: '癫狂黑市', content: '使用该牌后，自身暂时三天的伤害增加1d15，但其余阵营需要进行d10，投掷数字最低的人，也会获得暂时三天的1d10。但三天结束后，增加战力的阵营接下来三天暂时伤害减少1d10。' },
+                '2': { name: '夜袭', content: '夜晚专用，使用该牌后，可以每天夜晚多行动一次。如果移动到有其他阵营的敌方，立刻开启战斗，且自己必定最先行动。' },
+                '3': { name: '自相矛盾', content: '使用该牌可以反弹对面一次伤害。' },
+                '4': { name: '破而后立', content: '抵御一次致命伤害。' },
+                '5': { name: '命比天高', content: '获得【血量值】的护盾，持续生效直到在战斗中被耗尽。' },
+                '6': { name: '刀刀烈火刀刀爆', content: '本场战斗内所有攻击都为数值上限值，但攻击命中鉴定时-1d3。' },
+                '7': { name: '收兵跑路', content: '立刻脱离战斗，且不需要支付的事件牌。（逃跑时使用即可）' },
+                '8': { name: '草木皆兵', content: '本次战斗除自己以外所有人无法逃跑。' },
+                '9': { name: '早有防备', content: '战斗开始时，自身的防御等级+2。' },
+                '10': { name: '背刺', content: '若战斗时，除了敌人外，还存在一个【同盟】，则可以使用，将二人的防御值-2。（持续到战斗结束）' },
+                '11': { name: '投掷尸体', content: '战斗时，投掷出已故士兵的尸体（内含剧毒），对除了自己以外的人所有人造成命中率-2（持续到战斗结束）' },
+                '12': { name: '垃圾就应该待在垃圾堆', content: '指定一个在【复活区】的角色，增加一天等待时间。' },
+                '13': { name: '战力飙涨1', content: '命中率+1（持续一场战斗）' },
+                '14': { name: '战力飙涨2', content: '命中率+2（持续一场战斗）' },
+                '15': { name: '战力飙涨3', content: '命中率+3（持续一场战斗）' },
+                '16': { name: '战力飙涨4', content: '命中率+4（持续一场战斗）' },
+                '17': { name: '战力飙涨 max', content: '命中率永久+1d2（只能使用一次，若抽到重复可以重抽）' },
+                '18': { name: '无我之境1', content: '可造成伤害+1（持续一场战斗）' },
+                '19': { name: '无我之境2', content: '可造成伤害+2（持续一场战斗）' },
+                '20': { name: '无我之境3', content: '可造成伤害+3（持续一场战斗）' },
+                '21': { name: '无我之境4', content: '可造成伤害+4（持续一场战斗）' },
+                '22': { name: '无我之境max', content: '可造成伤害永久+1d2（只能使用一次，若抽到重复可以重抽）' },
+                '23': { name: '背水一战', content: '在超过三人及其以上的战斗时，可暂时增加1d5的命中率与1d3的伤害加成（持续到战斗结束）' },
+                '24': { name: '欺软怕硬', content: '在进行双人对战时，可暂时增加1d5的伤害加成与1d3的命中率（持续到战斗结束）' },
+                '25': { name: '人多力量大', content: '若本次多人战斗时，我方阵营人数多，则我方全员命中率+1。' },
+                '26': { name: '泻药', content: '指定一个在与你共同区域且为其他阵营的角色，使对方伤害暂时下降1d3（持续一场战斗）' },
+                '27': { name: '浴血', content: '本效果仅限一次战斗，造成伤害时，你可以回复1d2hp。' },
+                '28': { name: '预支强大', content: '战斗时，前三个回合，你的命中率增加2，伤害增加2，但接下来直到战斗结束前，你的命中率和伤害减2' },
+                '29': { name: '直击要害', content: '战斗时，仅限第一回合，可无视防御值，直接造成伤害。' },
+                '30': { name: '别想逃！', content: '在本场战斗时，若有敌方单位逃跑，你可无视防御对其造成1d3伤害。' },
+                '31': { name: '同归于尽', content: '使用后，本场战斗指定一人不许【逃跑】。' },
+                '32': { name: '同归于尽2', content: '使用后，本场战斗中所有人都不可【逃跑】。' },
+                '33': { name: '索敌', content: '选择战斗中的一人【锁定】。战斗中只可攻击【锁定】的一人，伤害固定＋2，命中率固定＋2。若此人死亡，战斗未结束，可以更换【锁定】目标。' }
+            },
+            '策略': {
+                '1': { name: '掀桌', content: '可以查看场上任一阵营所持所有手牌。' },
+                '2': { name: '掠夺', content: '可以选择任一阵营，抢夺其手上一张手牌。' },
+                '3': { name: 'going home', content: '可指派场上一人（非自己阵营）回到其出生点。' },
+                '4': { name: '何处可归', content: '可指派场上一人（非自己阵营）前往所在地区的任意地点。' },
+                '5': { name: '侍卫重组', content: '可重新抽取3次手牌，三选一，选择一组自己满意的即可。' },
+                '6': { name: '牢狱之灾', content: '可以对场上任一角色进行【造谣】，造谣后该角色被关押在此地三天不得离开，可以进行战斗但不能移动。' },
+                '7': { name: '逢凶化吉', content: '消除任一角色身上所有负面效果，包括战力下降/被关押等等。' },
+                '8': { name: '逢凶化吉plus', content: '消除本阵营所有角色身上所有负面效果，包括战力下降/被关押等等。' },
+                '9': { name: '纵横捭阖', content: '让同处于同一地点的阵营立刻开始战斗。' },
+                '10': { name: '春药', content: '强扭的瓜就是最甜的，不爱自己的人，喝下这瓶药总会爱上自己了。\n使用该事件牌的阵营，可以指定一个阵营作为自己的【同盟】，且与自己互换位置。' },
+                '11': { name: '以物易物1', content: '放弃2张任意类型的事件牌，随即抽取3张随机类型的牌。' },
+                '12': { name: '以物易物2', content: '放弃2张任意类型的事件牌，随即抽取3张战斗类型的牌。' },
+                '13': { name: '以物易物3', content: '放弃2张任意类型的事件牌，随即抽取3张策略类型的牌。' },
+                '14': { name: '以物易物4', content: '放弃2张任意类型的事件牌，随即抽取3张神秘类型的牌。' },
+                '15': { name: '背水一战', content: '使用后，一日内你方全员血量减半，但伤害翻倍。' },
+                '16': { name: '识破', content: '指定一个阵营，抵消对方刚打出的一张策略牌。' },
+                '17': { name: '调兵遣将1', content: '立刻移动到【皇宫】位置。' },
+                '18': { name: '调兵遣将2', content: '立刻移动到【关市】位置。' },
+                '19': { name: '调兵遣将3', content: '立刻移动到【边城】位置。' },
+                '20': { name: '调兵遣将4', content: '立刻移动到【驻军地】位置。' },
+                '21': { name: '调兵遣将5', content: '立刻移动到【平原】位置。' },
+                '22': { name: '调兵遣将6', content: '立刻移动到【峡谷】位置。' },
+                '23': { name: '调兵遣将7', content: '立刻移动到【无名森林】位置。' },
+                '24': { name: '调兵遣将8', content: '立刻移动到【鱼之山巅】位置。' },
+                '25': { name: '调兵遣将9', content: '立刻移动到【云阳城】位置。' },
+                '26': { name: '调兵遣将10', content: '立刻移动到【落鱼乡】位置。' },
+                '27': { name: '调兵遣将max', content: '立刻移动到指定位置。' },
+                '28': { name: '暗度陈仓', content: '可指定某角色复活后进入潜行状态，不可看见其行动轨迹，直到进入战斗。' },
+                '29': { name: '军令如山', content: '召唤阵营中一名角色至【主将】身边。' },
+                '30': { name: 'DOUBLE版军令如山', content: '召唤阵营中其他两名角色至【主将】身边。' },
+                '31': { name: '货菈菈，拉啥都快', content: '指定一名其他阵营的角色移动至你的角色身边。' },
+                '32': { name: '祸水东引', content: '将角色身上的负面效果转移至在场随机一人身上。' },
+                '33': { name: '反目成仇', content: '指定两个阵营立即变成【敌对】。' }
+            },
+            '神秘': {
+                '1': { name: '祈福', content: '晚上你去路边的荒庙祈福，秉持着宁可信其有的态度。庙里供奉的是一个不可言状的神秘雕像。接下来三天，你将被【■■■■】注视，本阵营角色战败后可原地满血【复活】。仅能生效在一个角色身上一次。' },
+                '2': { name: '神佛骨髓', content: '传闻说，峡谷内出现了佛祖的骨髓，喝下的人可以获得强大的力量，各大势力对其非常好奇。触发该事件后，不在该地区的所有阵营中其中【一人】都需要来到峡谷，争夺佛祖的骨髓。进行战斗，最终只能活下一个阵营，活下的阵营喝下骨髓后【血量永久增加1d10】且可抽取2张战斗事件牌。\n若操控的角色为边缘人的【僧侣】，则在争夺战中，必定最先行动，且喝下骨髓后，自身的【血量永久增加2d5】且可抽取2张战斗事件牌。' },
+                '3': { name: '山洪', content: '山区的湖泊泛滥，引发了整条河流的水平线抬升，周边地区水灾泛滥。在水灾泛滥区域，所有阵营角色接下来三天每天都将【血量固定下降1d5】。' },
+                '4': { name: '饥荒', content: '【立刻生效】\n近日干旱越发的严重，粮食的收成急剧减少，人民们怨声载道。抽到本事件的阵营需要立刻与【商贾】阵营进行交易（交换领地，给予对方1张事件牌），若不进行交易，则触发事件的阵营一天内【大幅度减少血量】。\n若自身为【商贾】阵营，则一天内【减少伤害1d3】，但可自己指定获得一张战斗/策略事件牌。' },
+                '5': { name: '献祭日', content: '神的欲望是无限的，你们发现，最近国内的灾难越发的增加，必须献祭50个人放置于山巅才行。献祭后，选择任一阵营使其【血量永久下降1d5】，并可以额外抽取1张策略和战斗牌。' },
+                '6': { name: '两个皇帝', content: '【立刻生效且重复抽到不生效】\n近日皇宫内出现了一桩怪事，出现了2个皇帝，2个人都有共同的行为和记忆，他们2人就好像镜子一样，但大臣们肯定，其中一个，是假的。\n触发该事件的阵营需要在其中二选一，选择正确的皇帝，可指定抽取2次战斗/策略牌，且与【皇宫】阵营结为【同盟】。选择假的皇帝，【皇宫】阵营【血量暂时下降1d5】且与触发该事件阵营永久敌对，和皇宫阵营同处同一地点必定触发战斗。\n若自身为【皇宫】阵营，选到正确的皇帝，则获得【战力增幅】且抽取一张策略牌。若选到了假的皇帝，则【战力暂时下降1d5】【血量暂时下降1d5】\n若此时【大臣】处于皇宫时，则不需要二选一，直接成功，获得【伤害增加1d5】且抽取一张策略牌。' },
+                '7': { name: '荒诞古书', content: '【立刻生效】\n近日，集市内出现了一本荒诞至极的古书，看过的人都陷入了永久的疯狂，喊着鱼神其实是邪神，鱼神会吞噬我们的，但好在处理及时，将说这些话的人都杀掉了，可这书，该怎么办呢？\n抽到该事件的阵营，需要【主将】对这本书进行阅读，进行5d10鉴定，5个骰子的数字都达到3，即可指定抽取5张策略事件牌，但如果没有达到，则【战力暂时下降】【血量暂时下降】且【主将】接下来5天内都无法行动。\n若【主将】为典籍官，则只需要2个数字达到3即可达到要求，且指定抽取5张策略/战斗事件牌。' },
+                '8': { name: '鱼神化身', content: '鱼神总是充满烦恼的，比如怎么样才能更多人的信仰自己呢？或许祂需要一个特别的人，作为自己的代言人，而你或许就是祂的最佳选择。\n使用该事件牌的阵营，与所有阵营变为【同盟】，且可以指定一个阵营，强制交换一张手牌。' },
+                '9': { name: '黄袍加身', content: '"天冷了，陛下该添衣了。"手下这么说着，你的身上突然出现了一件明黄色的袍子？！可以指定阵营使用该牌，【皇宫】阵营立刻变为该阵营【敌对】，【敌国】阵营变为该阵营【同盟】。\n如果对【皇宫】阵营使用，则会由【皇宫】阵营指派一人传送至本阵营【主将】身边，立刻开始战斗。' },
+                '10': { name: '另一个时空的记忆', content: '在甲■■的记忆，我们永远忘不掉，这是一个属于羁绊的故事，而不是现在，只有血腥和死亡。\n打出这张手牌后，所有阵营这天无法展开战斗。' },
+                '11': { name: '鬼打墙', content: '为什么这个路一直走不完，难道我中邪了？\n指定一个阵营，该阵营明天的移动次数 -1（该效果不可叠加）。' },
+                '12': { name: '疾病肆意', content: '悄悄给某个地方下毒，指定一个地区，该地区的所有角色，接下来2天每天血量 -1d3。' },
+                '13': { name: '海市蜃楼', content: '让我们来放点迷香，到这里的人想必都是有福之人。指定一个地区，三天内进入该地区的阵营，其移动目标由 GM 随机决定。' },
+                '14': { name: '读书会', content: '读书人的事怎么能叫抢呢？读书是进步的阶梯，也是抢劫的预告。指定一个阵营，与自己交换手上的全部手牌，若不愿意交换，则立刻传送到阵营【主将】身旁，立刻开始战斗。' },
+                '15': { name: '陨石', content: '听说，向流星许愿，愿望或许就能实现！但为什么流星正在朝着自己来呢？\n全场角色各掷 1d10，点数1-5者血量 -1d10，点数6-10者血量+1d5（持续2天）' },
+                '16': { name: '日全食', content: '鱼神害怕太阳被遮住，所以每当日全食发生，就象征着神从这个世界消失了一段时间，全国部分忠诚的鱼神信徒都会陷入昏迷，所以必须献出什么，才能阻止这一切的发生。\n抽到该卡牌的阵营，必须在使用卡牌的当日献祭【主将】，可以是任何阵营的主将（若要献祭其他阵营的主将，则直接去击杀即算献祭）。若献祭成功，该阵营获得群众的赞赏，命中率与伤害暂时五天+5。若没有献祭成功，则抽到该卡牌的阵营会被群众唾弃，血量暂时3天下降1d7。\n被献祭阵营的主将进入复活区时间增加至5天。' },
+                '17': { name: '鱼神狂信徒', content: '指定一个地点，这个地点会进入一群鱼神的狂信徒，打算将这里的全部杀死。\n进去该地点的所有人，立刻开启战斗，直到消灭了这些狂信徒为止。\n狂信徒：hp25  防御等级:6 命中率：2d4\n疯狂意识，可造成1d5伤害，若本次攻击没命中，则下次攻击增加1d5伤害（无上限）。' },
+                '18': { name: '殃及池鱼', content: '你们所做的一切让百姓苦不堪言，或许你们才是罪魁祸首吧。\n触发该卡牌的阵营，可指定一个阵营，使其行动次数-1，且会导致对方第二天无法抽取事件牌，持续2天。被指定的阵营需要击杀触发卡牌的阵营一名角色，该效果将会反弹至触发该阵营身上。（持续时间为2天）' },
+                '19': { name: '城门失火', content: '不知是谁放的火，恐惧在城内散布开来，而城门上的那团火，正是百姓心中无法改变的恐惧啊。\n触发该卡牌的阵营可让所有地点解除【标记】状态，且所有阵营行动次数-1，复活时间+1' },
+                '20': { name: '无限轮回', content: '你们突然意识到，这场战争永远不会停止，难道这只是一个游戏..?假的吧？\n使用该卡牌，可以使所有阵营重新抽取之前拥有数量等同的事件牌。' },
+                '21': { name: '蟑螂套餐', content: '说起来，藏经阁的蟑螂实在美味，最近有人想办法运到了城里，去吃吃吧？\n抽到该卡牌的阵营，可以指定一个阵营角色，吃下蟑螂套餐，会发生奇妙的变化。' },
+                '22': { name: '武侠成长日记', content: '似乎遇到了来自别的国家的流民，他说话带有不似本地的口音，大概是因为什么事情流浪到了此处。\n他现在看起来需要你的帮助，你选择：\n1. 交出手中1张手牌，在1d2日之后随机获得2张手牌。\n2. 交出手中2张手牌，在1d2日后获得"来自秋山的回信附礼"，可以召唤神秘阵营助战，攻击命中后可以使伤害叠加为双倍，两回合后消失。\n3. 爱莫能助，之后获得这张卡牌后，无法使用。' },
+                '23': { name: '爱的神秘来信', content: '鱼O的妈妈对他十分不好，但这次鱼澄妈妈压力错了人，她找上了你们，所有阵营血量下降1d10。\n被动效果：使用该卡牌后有10%概率触发，日比野的守护，血量永久增加或扣除血量的50%（选择一个角色降低or增加）' },
+                '24': { name: '液压机，这是这个时代的东西吗？', content: '遇到了神秘红发君主看上去你现在是他的部下，他直白地骂了你一顿，两种效果随机获得。\n（进行d10，1-5为效果1 ，6-10为效果2）\n效果1：你没听懂觉得被激励了，暂时一天增加5点hp护盾。\n效果2：你感觉这人说话太难听了气晕了，停留在原地一天无法行动。' },
+                '25': { name: '爱的小诅咒', content: '不好，鱼澄妈妈的诅咒影响到了你的身体健康。\n指定一个任意阵营角色进入梦境和鱼澄妈妈开始战斗，今天这个角色与使用该卡牌的角色无法行动。\n妈妈 hp：30 防御力：3 命中率：2d3    每次可造成1d5的伤害\n在梦境中血量单独计算，其中损失的50%生命值返还本体，直到消灭鱼澄妈妈为止。\n若战败，你开始发高烧，行动次数-1，持续两天。\n若战胜，可随机抽取两张神秘牌。' },
+                '26': { name: '我让你别做了你耳朵聋吗？', content: '遇到了神秘红发男子和他的爹，投掷一次d10，6-10进入旁观者视角，1-5则成为红发男子。\n1.旁观者视角，你看见红发男子被打飞了产生了幻痛，下一次遭遇战斗时立刻逃跑。\n2.当事人视角，你被扇了一巴掌，指定一个阵营和自己阵营的所有人损失1d10hp。' },
+                '27': { name: '耶稣天降', content: '耶稣从天而降？真的假的，我们这里好像不是外国吧？不管了。\n在场所有人直接随机抽取并使用一张战斗事件牌；同时，消除全部负面效果。\n但突然你陷入了神奇的负面状态，是耶稣在引导你吗？在接下来的一天里每天随机失去1d10血量。' },
+                '28': { name: '成仙路', content: '"小友，我看你很投缘啊。"\n遇到了神秘的蓝发世外高人，头顶的白发暗示了他不俗的实力。他自称拥有门路，询问你是否要加入仙门，得道成仙。你不禁思考，这真的是你想要的道路吗？\n1. 接受好意，得道修行。获得效果【如有神祝】，接下来回合获得额外一次伤害检定，两次掷骰取高判定。但每个回合都将过一次检定（d10），若为1-6则失败失去【如有神祝】效果，并受到创伤，一天内血量暂时下降5点，伤害暂时下降5点。\n2. 志不在此，谢过好意。' },
+                '29': { name: '女相师', content: '【立刻生效】\n听闻城内来了位女相师，她以团扇遮面，一头银丝好似不是凡人，口中所言皆是玄之又玄。她只在傍晚时分出现，你准备去一探究竟。' },
+                '29-2': { name: '女相师--铜钱挂', content: '你没想到会在这里见到女相师，只是神奇的是依旧看不清她的面容。她觉得你和她有缘，要送你一串【铜钱挂】。\n1.收下她的礼物。\n2.拒绝她的礼物。\np.s.此卡牌仅限于触发了事件一之后的玩家使用，若未触发事件一，即自动替换为其他随机一张神秘牌。' },
+                '30': { name: '饥饿的老鼠', content: '一名携带三只老鼠的神秘旅者出现在城中。他向你讲述了旅途中遇到的奇闻异事，随后提出一个奇怪的请求——为他的老鼠寻找一些合适的食物。据说，只要你完成他的委托，他便会支付一笔丰厚的报酬。\n是否接受这份委托？\n1.接受，1d10\n结果1（1-5）吃饱饱：老鼠很喜欢你找到的食物，消耗下一日的一次行动点数，额外获得三张手牌\n结果2（6-9）白忙活一场：老鼠拒绝进食，消耗下一日的全部行动点数\n结果3（10）愤怒的旅者：老鼠进食后生病，消耗下一日的全部行动点数，并丢失三张手牌。\n2.拒绝，之后抽到这张牌改为重新抽一张牌' },
+                '31': { name: '酒香不怕巷子深', content: '路过了某个看似平平无奇的小巷，但里面却传出了异常诱人的酒香。似乎是异乡人开的酒馆，板着脸却很热情的店小二展示了菜单，你选择：\n1.点招牌酒。\n2.点最烈的酒。\n3.点写着"不推荐"的酒。\n4.打赏店小二。\n5.好孩子不喝酒。' },
+                '32': { name: '琳琅闪光', content: '宅道尽头有一家店门正对着东面的服装店…且慢，在普通的平房街道中出现三四层楼这么高的奢侈店实在是不正常。走进这家华丽的异族风情服装店，店里的裁缝正在忙活着设计新的布衣，你在挂满织布的琳琅中穿梭，目光停留在角落朴素的衬衣和棒子上。那些木棒与时尚的店面显得有点格格不入，你选择：\n1.用两张手牌购买"精致的衣装"（使用该道具可重新投掷一个骰子；）\n2.用一张手牌购买"防具布衣"，（获得一点防御，持续一天）\n3.用一张手牌购买"木棒"，（增加1点命中率，持续一天）\n4.帮助老板娘处理来者不善的窃贼。' }
+            }
+        };
+
+        // ======================================================================
+        // 2. 状态管理
+        // ======================================================================
+        const factions = { '1': [], '2': [], '3': [], '4': [], '5': [] };
+        let cardInstanceCounter = 0;
+        const cardInstances = {};
+
+        // 本地存储配置
+        const STORAGE_KEY = 'event_card_manager_2_0';
+        const STORAGE_VERSION = 1;
+
+        // ======================================================================
+        // 3. 本地存储（保存/读取/清空）
+        // ======================================================================
+        function saveToLocalStorage() {
+            try {
+                const payload = {
+                    version: STORAGE_VERSION,
+                    savedAt: new Date().toISOString(),
+                    factions: factions,
+                    cardInstances: cardInstances,
+                    cardInstanceCounter: cardInstanceCounter
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+                updateStorageStatus(true);
+            } catch (e) {
+                console.error('保存本地数据失败:', e);
+                updateStorageStatus(false, '保存失败：' + (e && e.message ? e.message : '未知错误'));
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return false;
+                const data = JSON.parse(raw);
+                if (!data || typeof data !== 'object') return false;
+
+                // 恢复阵营
+                if (data.factions && typeof data.factions === 'object') {
+                    for (let f = 1; f <= 5; f++) {
+                        const key = String(f);
+                        if (Array.isArray(data.factions[key])) {
+                            factions[key] = data.factions[key].map(n => Number(n)).filter(n => !isNaN(n));
+                        } else {
+                            factions[key] = [];
+                        }
+                    }
+                }
+
+                // 恢复卡牌实例
+                if (data.cardInstances && typeof data.cardInstances === 'object') {
+                    Object.keys(cardInstances).forEach(k => delete cardInstances[k]);
+                    Object.keys(data.cardInstances).forEach(k => {
+                        const item = data.cardInstances[k];
+                        if (item && typeof item === 'object') {
+                            cardInstances[k] = {
+                                type: item.type || '',
+                                typeId: item.typeId || '',
+                                name: item.name || '',
+                                content: item.content || ''
+                            };
+                        }
+                    });
+                }
+
+                // 恢复计数器
+                if (typeof data.cardInstanceCounter === 'number' && isFinite(data.cardInstanceCounter)) {
+                    cardInstanceCounter = data.cardInstanceCounter;
+                } else {
+                    cardInstanceCounter = 0;
+                }
+
+                // 校正：确保所有阵营中的 id 都存在于 cardInstances 中
+                for (let f = 1; f <= 5; f++) {
+                    const key = String(f);
+                    factions[key] = factions[key].filter(id => cardInstances.hasOwnProperty(String(id)));
+                }
+
+                // 校正：确保 cardInstanceCounter 大于所有已存在的 id
+                let maxId = 0;
+                Object.keys(cardInstances).forEach(k => {
+                    const n = Number(k);
+                    if (!isNaN(n) && n > maxId) maxId = n;
+                });
+                if (cardInstanceCounter < maxId) cardInstanceCounter = maxId;
+
+                updateStorageStatus(true, '已恢复本地保存的数据');
+                return true;
+            } catch (e) {
+                console.error('加载本地数据失败:', e);
+                updateStorageStatus(false, '读取失败：' + (e && e.message ? e.message : '未知错误'));
+                return false;
+            }
+        }
+
+        function clearLocalStorage() {
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+            } catch (e) {
+                console.error('清除本地数据失败:', e);
+            }
+        }
+
+        function updateStorageStatus(isOk, msg) {
+            const el = document.getElementById('storageStatus');
+            if (!el) return;
+            if (msg) {
+                el.textContent = msg;
+            } else if (isOk) {
+                el.textContent = '本地数据已自动保存';
+            } else {
+                el.textContent = '本地数据保存异常';
+            }
+        }
+
+        // ======================================================================
+        // 4. 核心函数
+        // ======================================================================
+        function getCardIdsOfType(type) {
+            return Object.keys(CARD_DATA[type] || {});
+        }
+
+        function drawCard(type) {
+            if (type === '随机') {
+                const types = ['战斗', '策略', '神秘'];
+                const t = types[Math.floor(Math.random() * types.length)];
+                return drawCard(t);
+            }
+            const ids = getCardIdsOfType(type);
+            if (ids.length === 0) return null;
+            const randomId = ids[Math.floor(Math.random() * ids.length)];
+            const data = CARD_DATA[type][randomId];
+            return { type: type, typeId: randomId, name: data.name, content: data.content };
+        }
+
+        function addCardToFaction(factionKey, cardInfo) {
+            if (!cardInfo) return null;
+            if (!factions[factionKey]) return null;
+            const id = ++cardInstanceCounter;
+            cardInstances[id] = {
+                type: cardInfo.type,
+                typeId: cardInfo.typeId,
+                name: cardInfo.name,
+                content: cardInfo.content
+            };
+            factions[factionKey].push(id);
+            saveToLocalStorage();
+            return id;
+        }
+
+        function removeCardFromFaction(factionKey, instanceId) {
+            const idx = factions[factionKey].indexOf(instanceId);
+            if (idx === -1) return false;
+            factions[factionKey].splice(idx, 1);
+            delete cardInstances[instanceId];
+            saveToLocalStorage();
+            return true;
+        }
+
+        function moveCardBetweenFactions(fromKey, toKey, instanceId) {
+            if (fromKey === toKey) return false;
+            if (!factions[fromKey] || !factions[toKey]) return false;
+            const idx = factions[fromKey].indexOf(instanceId);
+            if (idx === -1) return false;
+            factions[fromKey].splice(idx, 1);
+            factions[toKey].push(instanceId);
+            saveToLocalStorage();
+            return true;
+        }
+
+        function getCardsInFaction(factionKey) {
+            return factions[factionKey].map(id => cardInstances[id]).filter(Boolean);
+        }
+
+        // ======================================================================
+        // 5. 渲染函数
+        // ======================================================================
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function renderDrawResult(cardInfo, targetFaction) {
+            const container = document.getElementById('drawResult');
+            if (!cardInfo) {
+                container.innerHTML = '<span class="empty-hint">点击上方按钮抽取卡牌，将放入您选择的阵营</span>';
+                return;
+            }
+            const typeLabel = cardInfo.type;
+            const name = cardInfo.name || '未知';
+            const content = cardInfo.content || '（无内容）';
+            container.innerHTML =
+                '<span class="card-type-label">' + typeLabel + '</span>' +
+                '<span class="card-name">' + escapeHtml(name) + '</span>' +
+                '<div class="card-content">' + escapeHtml(content) + '</div>' +
+                '<div class="target-hint">已放入阵营 ' + targetFaction + '</div>';
+        }
+
+        function renderAllFactions() {
+            const container = document.getElementById('factionsContainer');
+            let html = '';
+            for (let f = 1; f <= 5; f++) {
+                const key = String(f);
+                const cards = getCardsInFaction(key);
+                html += '<div class="faction-box">';
+                html += '<div class="faction-title">阵营 ' + f + '</div>';
+                if (cards.length === 0) {
+                    html += '<div class="faction-empty">（空）</div>';
+                } else {
+                    for (const inst of cards) {
+                        html += renderFactionCard(key, inst);
+                    }
+                }
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function renderFactionCard(factionKey, inst) {
+            const id = Object.keys(cardInstances).find(k => cardInstances[k] === inst);
+            if (!id) return '';
+            const type = inst.type || '未知';
+            const name = inst.name || '未知';
+            const content = inst.content || '（无内容）';
+
+            let html = '<div class="faction-card">';
+            html += '<div class="fc-header">';
+            html += '<span class="fc-type">' + escapeHtml(type) + '</span>';
+            html += '<span class="fc-name">' + escapeHtml(name) + '</span>';
+            html += '</div>';
+            html += '<div class="fc-content">' + escapeHtml(content) + '</div>';
+            html += '<div class="fc-actions">';
+
+            html += '<span style="font-size:13px;">移至：</span>';
+            html += '<select class="move-target" data-instance="' + id + '" data-from="' + factionKey + '">';
+            for (let t = 1; t <= 5; t++) {
+                const tKey = String(t);
+                if (tKey !== factionKey) {
+                    html += '<option value="' + tKey + '">阵营 ' + t + '</option>';
+                }
+            }
+            html += '</select>';
+            html += '<button class="move-btn" data-instance="' + id + '" data-from="' + factionKey + '">转移</button>';
+            html += '<button class="del-btn" data-instance="' + id + '" data-faction="' + factionKey + '">删除</button>';
+            html += '</div>';
+            html += '</div>';
+            return html;
+        }
+
+        // ======================================================================
+        // 6. 搜索功能
+        // ======================================================================
+        function searchCards(keyword) {
+            if (!keyword.trim()) return [];
+            const lower = keyword.toLowerCase().trim();
+            const results = [];
+            for (const [type, cards] of Object.entries(CARD_DATA)) {
+                for (const [typeId, data] of Object.entries(cards)) {
+                    const nameMatch = data.name.toLowerCase().includes(lower);
+                    const contentMatch = data.content.toLowerCase().includes(lower);
+                    if (nameMatch || contentMatch) {
+                        results.push({
+                            type: type,
+                            typeId: typeId,
+                            name: data.name,
+                            content: data.content
+                        });
+                    }
+                }
+            }
+            return results;
+        }
+
+        function renderSearchResults(results) {
+            const container = document.getElementById('searchResults');
+            if (results.length === 0) {
+                container.innerHTML = '<span class="no-result">未找到匹配的卡牌</span>';
+                return;
+            }
+            let html = '';
+            for (const card of results) {
+                html += '<div class="search-result-item">';
+                html += '<div class="sr-info">';
+                html += '<span class="sr-type">' + escapeHtml(card.type) + '</span>';
+                html += '<span class="sr-name">' + escapeHtml(card.name) + '</span>';
+                html += '<div class="sr-content-preview">' + escapeHtml(card.content.substring(0, 120)) + (card.content.length > 120 ? '…' : '') + '</div>';
+                html += '</div>';
+                html += '<div class="sr-actions">';
+                html += '<select class="sr-target" data-type="' + card.type + '" data-typeid="' + card.typeId + '">';
+                for (let f = 1; f <= 5; f++) {
+                    html += '<option value="' + f + '">阵营 ' + f + '</option>';
+                }
+                html += '</select>';
+                html += '<button class="add-btn sr-add-btn" data-type="' + card.type + '" data-typeid="' + card.typeId + '">加入</button>';
+                html += '</div>';
+                html += '</div>';
+            }
+            container.innerHTML = html;
+
+            container.querySelectorAll('.sr-add-btn').forEach(btn => {
+                btn.removeEventListener('click', handleSearchAdd);
+                btn.addEventListener('click', handleSearchAdd);
+            });
+        }
+
+        function handleSearchAdd(e) {
+            const btn = e.currentTarget;
+            const type = btn.dataset.type;
+            const typeId = btn.dataset.typeid;
+            const item = btn.closest('.search-result-item');
+            const select = item ? item.querySelector('.sr-target') : null;
+            if (!select) return;
+            const targetFaction = select.value;
+            const cardData = CARD_DATA[type] && CARD_DATA[type][typeId];
+            if (!cardData) {
+                alert('卡牌数据不存在');
+                return;
+            }
+            const cardInfo = {
+                type: type,
+                typeId: typeId,
+                name: cardData.name,
+                content: cardData.content
+            };
+            const result = addCardToFaction(targetFaction, cardInfo);
+            if (result) {
+                renderAllFactions();
+                bindFactionEvents();
+                alert('已加入阵营 ' + targetFaction);
+            } else {
+                alert('加入失败，请检查阵营');
+            }
+        }
+
+        // ======================================================================
+        // 7. 事件绑定
+        // ======================================================================
+
+        // 抽取按钮
+        document.querySelectorAll('.draw-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const type = this.dataset.type;
+                const targetSelect = document.getElementById('drawTargetFaction');
+                const targetFaction = targetSelect.value;
+
+                const cardInfo = drawCard(type);
+                if (!cardInfo) {
+                    renderDrawResult(null);
+                    alert('该类型暂无卡牌数据');
+                    return;
+                }
+                const result = addCardToFaction(targetFaction, cardInfo);
+                if (!result) {
+                    alert('无效的阵营');
+                    return;
+                }
+                renderDrawResult(cardInfo, targetFaction);
+                renderAllFactions();
+                bindFactionEvents();
+            });
+        });
+
+        // 搜索按钮
+        document.getElementById('searchBtn').addEventListener('click', function() {
+            const keyword = document.getElementById('searchInput').value;
+            const results = searchCards(keyword);
+            renderSearchResults(results);
+        });
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('searchBtn').click();
+            }
+        });
+
+        // 清空本地数据按钮
+        document.getElementById('clearStorageBtn').addEventListener('click', function() {
+            if (!confirm('确定要清空所有阵营数据并重置吗？此操作无法撤销。')) return;
+            // 重置内存数据
+            for (let f = 1; f <= 5; f++) {
+                factions[String(f)] = [];
+            }
+            Object.keys(cardInstances).forEach(k => delete cardInstances[k]);
+            cardInstanceCounter = 0;
+            clearLocalStorage();
+            // 重新渲染
+            renderAllFactions();
+            bindFactionEvents();
+            renderDrawResult(null);
+            document.getElementById('searchResults').innerHTML = '<span class="no-result">输入关键词并点击搜索，匹配结果将显示在这里</span>';
+            updateStorageStatus(true, '本地数据已清空');
+        });
+
+        // 阵营内操作绑定（委托）
+        function bindFactionEvents() {
+            document.querySelectorAll('.del-btn').forEach(btn => {
+                btn.removeEventListener('click', handleDel);
+                btn.addEventListener('click', handleDel);
+            });
+            document.querySelectorAll('.move-btn').forEach(btn => {
+                btn.removeEventListener('click', handleMove);
+                btn.addEventListener('click', handleMove);
+            });
+        }
+
+        function handleDel(e) {
+            const btn = e.currentTarget;
+            const instanceId = parseInt(btn.dataset.instance);
+            const factionKey = btn.dataset.faction;
+            if (isNaN(instanceId)) return;
+            if (!confirm('确定要从阵营 ' + factionKey + ' 删除这张牌吗？')) return;
+            const success = removeCardFromFaction(factionKey, instanceId);
+            if (success) {
+                renderAllFactions();
+                bindFactionEvents();
+            } else {
+                alert('删除失败，请刷新重试');
+            }
+        }
+
+        function handleMove(e) {
+            const btn = e.currentTarget;
+            const instanceId = parseInt(btn.dataset.instance);
+            const fromFaction = btn.dataset.from;
+            if (isNaN(instanceId)) return;
+            const cardDiv = btn.closest('.faction-card');
+            const select = cardDiv ? cardDiv.querySelector('.move-target') : null;
+            if (!select) {
+                alert('未找到目标选择器');
+                return;
+            }
+            const toFaction = select.value;
+            if (!toFaction || toFaction === fromFaction) {
+                alert('请选择有效的目标阵营');
+                return;
+            }
+            const success = moveCardBetweenFactions(fromFaction, toFaction, instanceId);
+            if (success) {
+                renderAllFactions();
+                bindFactionEvents();
+            } else {
+                alert('转移失败，请确认牌存在且阵营有效');
+            }
+        }
+
+        // ======================================================================
+        // 8. 初始化
+        // ======================================================================
+
+        // 先尝试恢复本地数据
+        const hasSavedData = loadFromLocalStorage();
+
+        // 再渲染
+        renderAllFactions();
+        bindFactionEvents();
+        renderDrawResult(null);
+        document.getElementById('searchResults').innerHTML = '<span class="no-result">输入关键词并点击搜索，匹配结果将显示在这里</span>';
+
+        if (hasSavedData) {
+            updateStorageStatus(true, '已恢复上次保存的本地数据');
+        } else {
+            updateStorageStatus(true, '本地数据将自动保存');
+        }
+
+        console.log('事件牌管理 2.0 已启动（含本地存储）');
+    </script>
+
+</body>
+</html>
